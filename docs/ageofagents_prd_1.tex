@@ -1,0 +1,238 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tocloft}
+\usepackage{listings}
+\usepackage{verbatim}
+
+\title{\textbf{Product Requirements Document (PRD)}\\
+\textbf{AgeOfAgents}\\[0.5em]
+\large The Ultimate Local-First RTS Command Center for AI Coding Agents}
+\author{Dylan Kawalec (ChaoticBeautys) in collaboration with Grok AI}
+\date{\today}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={AgeOfAgents PRD},
+    pdfpagemode=FullScreen,
+}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Executive Summary \& Vision}
+
+\textbf{AgeOfAgents} is a complete fork and re-imagining of the open-source \textbf{openage} engine[](https://github.com/SFTtech/openage) that transforms the classic \textit{Age of Empires II} real-time strategy (RTS) gameplay into the ultimate visual command center for orchestrating fleets of local AI coding agents.
+
+Instead of managing peasants, knights, and castles, you will command **AI agents** (spawned from your own Ollama models and custom agent software) across a living, infinite battlefield where:
+\begin{itemize}
+    \item The **map = your entire massive monorepo + hundreds of internal repositories**.
+    \item **Buildings = code modules, services, folders, and sub-repos**.
+    \item **Units = AI coding agents** (Coder, Planner, Reviewer, Executor, Researcher, etc.).
+    \item **Resources = compute, tokens, memory, and data**.
+    \item **Tech tree = agent skill upgrades and new capabilities**.
+    \item **Fog of war = unexplored parts of your protocol/architecture**.
+\end{itemize}
+
+We extract **every single idea** from AgentCraft (raw concepts from the April 2026 video https://www.youtube.com/watch?v=kR64LOqBBCU), Arcane Agents, VibeCraft, and GastownRTS, then replace the original AoE2 war logic with production-grade AI orchestration.
+
+\textbf{Core Promise}: Run everything 100\% locally. Point AgeOfAgents at your giant monorepo root. Spawn, monitor, and command hundreds of Ollama-powered agents in true RTS style. The battlefield visually represents your entire codebase architecture in real time.
+
+This PRD is written to be **production-ready for AI coding agents** (Claude Code, Cursor, Ollama-based agents, etc.) to implement the entire system end-to-end.
+
+\textbf{Project Name}: \textbf{AgeOfAgents} (or ``Age of Agents'')
+
+\textbf{Base Repository to Fork}: Your fork \href{https://github.com/DylanCkawalec/openage}{https://github.com/DylanCkawalec/openage} (which is itself a fork of the upstream \href{https://github.com/SFTtech/openage}{SFTtech/openage}).
+
+\textbf{License}: Remain GPLv3 (inherited from openage).
+
+\newpage
+\section{Project Inspirations \& References}
+
+All raw ideas are consolidated from the following open-source projects and the AgentCraft video:
+
+\begin{itemize}
+    \item \textbf{AgentCraft} – Raw ideas only (no npx usage) \\
+      Video: \href{https://www.youtube.com/watch?v=kR64LOqBBCU}{https://www.youtube.com/watch?v=kR64LOqBBCU} \\
+      Core concepts: RTS UI, file-system-as-map, buildings-as-functionality, campaign orchestrator, container isolation, review bundles, heat maps, quest system.
+    \item \textbf{Arcane Agents} – \href{https://github.com/thomasrice/arcane-agents}{https://github.com/thomasrice/arcane-agents} \\
+      Any CLI runtime (Ollama), live tmux terminal streaming, auto status detection, project auto-discovery, keyboard-first hotkeys.
+    \item \textbf{VibeCraft} – \href{https://github.com/rayzhudev/vibecraft}{https://github.com/rayzhudev/vibecraft} \\
+      Infinite pannable/zoomable canvas, folders/terminals/agents as draggable entities, git worktree tools.
+    \item \textbf{GastownRTS} – \href{https://github.com/NJHFinanceHub/GastownRTS}{https://github.com/NJHFinanceHub/GastownRTS} \\
+      Classic RTS HUD, minimap, resource bars, command cards, specialized agent role classes.
+    \item \textbf{openage Engine} – \href{https://github.com/SFTtech/openage}{https://github.com/SFTtech/openage} + your fork.
+\end{itemize}
+
+\section{Core Concept: Creative Replacements}
+
+We replace every AoE2 game element with AI-coding equivalents while preserving full RTS muscle memory:
+
+\begin{longtable}{ll}
+\toprule
+\textbf{AoE2 Element} & \textbf{AgeOfAgents Replacement} \\
+\midrule
+Map / Terrain & Living architecture diagram of your monorepo (folders = terrain features, repos = regions) \\
+Units (peasants, knights, etc.) & AI Agents (visual avatars with role icons; colors = status: idle/green, working/blue, error/red, attention/orange) \\
+Buildings & Code modules, services, sub-repos, or folders (click to assign agents) \\
+Resources (food, wood, gold, stone) & Compute (CPU/GPU), Tokens, Memory, Data \\
+Tech Tree & Agent skill upgrades (new tools, RAG capabilities, Ollama model variants) \\
+Fog of War & Unexplored code sections or unanalyzed dependencies \\
+Campaign / Scenario Editor & High-level mission orchestrator (``Refactor entire protocol'') \\
+Minimap & Overview of entire monorepo structure \\
+Command Cards / Hotkeys & Spawn agent, Assign task, Review PR, Kill session, Cycle idle agents \\
+Age of Empires II Definitive Edition graphics & Keep original assets for familiarity OR replace with custom sci-fi/AI-themed skins \\
+\bottomrule
+\end{longtable}
+
+\section{Functional Requirements}
+
+\subsection{1. Local-First Architecture}
+\begin{itemize}
+    \item 100\% offline capable. No cloud dependencies.
+    \item Native Ollama integration (any local model via YAML config, exactly like Arcane Agents).
+    \item Support for custom agent runtimes (Claude Code, OpenCode, Cursor CLI, or any bash/python wrapper).
+    \item Persistent SQLite + tmux session storage (inherited and extended from Arcane).
+\end{itemize}
+
+\subsection{2. Monorepo \& Multi-Repo Discovery}
+\begin{itemize}
+    \item Auto-discovery engine (recursive scan, git worktrees, glob patterns).
+    \item Point at root folder → entire protocol appears as procedural map.
+    \item Hundreds of internal repos supported simultaneously.
+\end{itemize}
+
+\subsection{3. RTS Command Center UI (Merged Best Ideas)}
+\begin{itemize}
+    \item Infinite pannable/zoomable canvas (VibeCraft) + classic AoE2 camera controls.
+    \item Classic RTS HUD: minimap, resource bars, quest log, command cards (GastownRTS).
+    \item Units (agents) appear as draggable, selectable entities on the map.
+    \item Live terminal streaming windows (Arcane Agents) that can be pinned or attached to units.
+    \item Heat maps + collision detection for overlapping agent work (AgentCraft).
+    \item Fog of war that lifts as agents explore code.
+\end{itemize}
+
+\subsection{4. Agent Spawning \& Orchestration}
+\begin{itemize}
+    \item Spawn agents via RTS controls or voice/text prompt.
+    \item ``Campaign'' mode (AgentCraft): give high-level goal → agents decompose into quests and execute autonomously.
+    \item Container isolation per agent (Docker or lightweight sandbox).
+    \item Real-time status auto-detection from terminal output.
+    \item Keyboard-first hotkeys for power users.
+\end{itemize}
+
+\subsection{5. Codebase-Aware Prompting \& Execution}
+\begin{itemize}
+    \item Attach agent to any building/folder → automatic context (files, git history, architecture diagram).
+    \item Full prompting over any codebase (Ollama models receive RAG context from the monorepo).
+    \item Agents can read, write, run tests, commit, and create PRs inside the game world.
+\end{itemize}
+
+\subsection{6. Review \& Collaboration}
+\begin{itemize}
+    \item Review bundles with visual evidence (screenshots, videos, diff heatmaps).
+    \item Multiplayer ``Alliance Hall'' – shared battlefield for team + remote agents.
+    \item Chat between human and agents; agents announce actions.
+\end{itemize}
+
+\subsection{7. Visual Architecture Representation}
+\begin{itemize}
+    \item The map \emph{is} your protocol architecture in real time.
+    \item Buildings can be merged, split, or upgraded as you refactor.
+    \item Resource nodes = critical files or dependencies.
+\end{itemize}
+
+\section{Non-Functional Requirements}
+\begin{itemize}
+    \item Performance: Handle 100+ simultaneous agents on consumer hardware.
+    \item Extensibility: Full Python API (already in openage) + nyan modding system for new agent types.
+    \item Security: All execution inside user-controlled containers; no external network unless explicitly allowed.
+    \item Accessibility: Hotkey-first + optional voice commands.
+    \item Cross-platform: Linux/macOS/Windows (via openage's existing support).
+\end{itemize}
+
+\section{Technical Architecture Overview}
+
+\begin{itemize}
+    \item \textbf{Core Engine}: Fork openage (C++ simulation + OpenGL/Qt6 UI).
+    \item \textbf{New Backend Layer}: Node.js / Python bridge (reuse Arcane's tmux + runtime manager).
+    \item \textbf{Ollama Integration}: YAML-defined runtimes that launch Ollama + custom agent scripts.
+    \item \textbf{Modding}: Use nyan to define new unit types (agent roles), buildings (repo types), and techs (skills).
+    \item \textbf{State Persistence}: SQLite for agent sessions + openage savegame format for entire battlefields.
+\end{itemize}
+
+\section{Implementation Roadmap (To-Do List for AI Agents)}
+
+\subsection{Phase 0 – Fork \& Setup (1 week)}
+\begin{enumerate}
+    \item Fork \href{https://github.com/DylanCkawalec/openage}{your openage fork} and pull latest from upstream.
+    \item Build and run the base engine locally (follow \texttt{doc/building.md}).
+    \item Add a new ``AgeOfAgents'' modpack directory.
+\end{enumerate}
+
+\subsection{Phase 1 – Replace Game Logic (2-3 weeks)}
+\begin{enumerate}
+    \item Map monorepo root → procedural map generation.
+    \item Replace unit AI with agent orchestration backend.
+    \item Implement Arcane-style YAML runtime config for Ollama.
+    \item Add live terminal streaming windows attached to units.
+\end{enumerate}
+
+\subsection{Phase 2 – UI \& RTS Features (3 weeks)}
+\begin{enumerate}
+    \item Infinite canvas + VibeCraft-style entity placement.
+    \item Full GastownRTS HUD (minimap, resources, command cards).
+    \item AgentCraft campaign/quest system.
+    \item Status colors, heat maps, collision detection.
+\end{enumerate}
+
+\subsection{Phase 3 – Production Polish (2 weeks)}
+\begin{enumerate}
+    \item Container isolation + review bundles.
+    \item Multiplayer Alliance Hall.
+    \item Voice input + mobile PWA companion (optional but high value).
+    \item Custom AI-themed graphics (replace AoE assets).
+\end{enumerate}
+
+\subsection{Phase 4 – Release \& Extensibility}
+\begin{enumerate}
+    \item Full documentation and example mod for new agent roles.
+    \item Public GitHub release under GPLv3.
+    \item Community modding guide using nyan + Python API.
+\end{enumerate}
+
+\section{Acceptance Criteria (For AI Coding Agents)}
+
+The final system must:
+\begin{itemize}
+    \item Run completely locally with Ollama.
+    \item Visually represent any monorepo as an AoE2-style battlefield.
+    \item Allow spawning, commanding, and monitoring real coding agents via RTS controls.
+    \item Preserve all listed ideas from the four source projects.
+    \item Be extensible via Python and nyan.
+    \item Feel like a production-ready masterpiece that makes managing 100+ agents feel like playing Age of Empires II.
+\end{itemize}
+
+\newpage
+\section{Appendix A: Consolidated Feature DNA (All 4 Sources + openage)}
+
+(Full list available in previous conversation extracts – every idea from AgentCraft video transcript, Arcane Agents README, VibeCraft canvas, GastownRTS HUD, and openage Python/nyan capabilities is to be implemented.)
+
+This PRD is now complete and ready for implementation.
+
+\textbf{Let's build the future of AI coding together.}
+
+\end{document}

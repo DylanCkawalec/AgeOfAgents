@@ -77,6 +77,13 @@ perf.data*
 
 # Virtual Environments
 /.venv/
+# AgeOfAgents local runtime artifacts
+/logs/
+/state/events.jsonl
+/state/ageofagents.sqlite
+/state/ageofagents.sqlite-*
+/state/macos/venv/
+/state/orbstack/
 
 # macOS
 .DS_Store

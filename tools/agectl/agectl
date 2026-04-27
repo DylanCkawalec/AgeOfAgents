@@ -1,0 +1,117 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+VM_SCRIPT_DIR="${ROOT_DIR}/infra/vm"
+ORBSTACK_SCRIPT_DIR="${ROOT_DIR}/infra/orbstack"
+MACOS_SCRIPT_DIR="${ROOT_DIR}/infra/macos"
+EVENT_BUS_SCRIPT="${ROOT_DIR}/agent_runtime/event_bus/age_event_bus.py"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  agectl vm start|stop|status|shell
+  agectl deps install
+  agectl build configure|compile|status
+  agectl run|game
+  agectl logs [runtime|agents|build|vm]
+  agectl orbstack status|build-image|configure|compile|run|game|all|shell
+  agectl native check-deps|install-deps|configure|compile|run|game|all
+  agectl events init|status|types|emit|list|tail
+EOF
+}
+
+cmd_vm() {
+  sub="${1:-}"
+  case "${sub}" in
+    start) "${VM_SCRIPT_DIR}/bootstrap_vm.sh" ;;
+    stop) limactl stop "${VM_NAME:-ageofagents}" ;;
+    status) limactl list | awk -v vm="${VM_NAME:-ageofagents}" 'NR == 1 || $1 == vm' ;;
+    shell) limactl shell "${VM_NAME:-ageofagents}" ;;
+    *) usage; exit 1 ;;
+  esac
+}
+
+cmd_orbstack() {
+  sub="${1:-status}"
+  case "${sub}" in
+    status) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" status ;;
+    build-image) "${ORBSTACK_SCRIPT_DIR}/build_image.sh" ;;
+    configure) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" configure ;;
+    compile) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" compile ;;
+    run) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" run ;;
+    game) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" game ;;
+    all) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" all ;;
+    shell) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" shell ;;
+    *) usage; exit 1 ;;
+  esac
+}
+
+cmd_native() {
+  sub="${1:-check-deps}"
+  case "${sub}" in
+    check-deps) "${MACOS_SCRIPT_DIR}/check_deps.sh" ;;
+    install-deps) "${MACOS_SCRIPT_DIR}/install_deps.sh" ;;
+    configure) "${MACOS_SCRIPT_DIR}/build_openage.sh" configure ;;
+    compile) "${MACOS_SCRIPT_DIR}/build_openage.sh" compile ;;
+    run) "${MACOS_SCRIPT_DIR}/build_openage.sh" run ;;
+    game) "${MACOS_SCRIPT_DIR}/build_openage.sh" game ;;
+    all) "${MACOS_SCRIPT_DIR}/build_openage.sh" all ;;
+    *) usage; exit 1 ;;
+  esac
+}
+
+cmd_events() {
+  if [ ! -f "${EVENT_BUS_SCRIPT}" ]; then
+    echo "ERROR: missing event bus script at ${EVENT_BUS_SCRIPT}" >&2
+    exit 1
+  fi
+  python3 "${EVENT_BUS_SCRIPT}" --repo-root "${ROOT_DIR}" "$@"
+}
+
+cmd_deps() {
+  sub="${1:-}"
+  case "${sub}" in
+    install) "${VM_SCRIPT_DIR}/install_openage_deps.sh" ;;
+    *) usage; exit 1 ;;
+  esac
+}
+
+cmd_build() {
+  sub="${1:-}"
+  case "${sub}" in
+    configure) "${VM_SCRIPT_DIR}/run_engine.sh" configure ;;
+    compile) "${VM_SCRIPT_DIR}/run_engine.sh" compile ;;
+    status) test -f "${ROOT_DIR}/logs/runtime/run-engine.log" && tail -n 50 "${ROOT_DIR}/logs/runtime/run-engine.log" || echo "No build log yet." ;;
+    *) usage; exit 1 ;;
+  esac
+}
+
+cmd_logs() {
+  sub="${1:-runtime}"
+  case "${sub}" in
+    runtime) ls -la "${ROOT_DIR}/logs/runtime" ;;
+    agents) ls -la "${ROOT_DIR}/logs/agents" ;;
+    build) ls -la "${ROOT_DIR}/logs/build" ;;
+    vm) ls -la "${ROOT_DIR}/logs/vm" ;;
+    *) usage; exit 1 ;;
+  esac
+}
+
+main() {
+  "${VM_SCRIPT_DIR}/expose_to_macos.sh" >/dev/null
+  case "${1:-}" in
+    vm) shift; cmd_vm "${1:-}" ;;
+    deps) shift; cmd_deps "${1:-}" ;;
+    build) shift; cmd_build "${1:-}" ;;
+    run) "${VM_SCRIPT_DIR}/run_engine.sh" run ;;
+    game) "${VM_SCRIPT_DIR}/run_engine.sh" game ;;
+    logs) shift || true; cmd_logs "${1:-runtime}" ;;
+    orbstack) shift; cmd_orbstack "${1:-status}" ;;
+    native) shift; cmd_native "${1:-check-deps}" ;;
+    events) shift; cmd_events "$@" ;;
+    *) usage; exit 1 ;;
+  esac
+}
+
+main "$@"

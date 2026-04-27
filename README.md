@@ -130,6 +130,21 @@ Quickstart
 **Alternative approach:**
 You can build and run the project using Docker. See [Running with docker](/doc/build_instructions/docker.md) for more details.
 
+AgeOfAgents: macOS-compatible desktop runtime
+---------------------------------------------
+
+This branch also documents the AgeOfAgents runtime path for macOS users and operators.
+
+- **macOS compatibility support**:
+  - primary path: ARM64 Linux VM layer for Apple Silicon in `infra/vm/`
+  - fallback path: OrbStack helpers in `infra/orbstack/`
+  - native fallback path: local macOS build helpers in `infra/macos/`
+- **Desktop-local AI agent support**:
+  - local durable event bus in `agent_runtime/event_bus/`
+  - host operator gateway in `tools/agectl/` for VM control, build/run orchestration, and event operations
+
+If you are running AgeOfAgents on desktop, start with `tools/agectl/README.md` and `infra/vm/README.md` for the recommended setup flow.
+
 * **I compiled everything. Now how do I run it?**
     * Execute `cd bin && ./run main`.
     * [The convert script](/doc/media_convert.md) will transform original assets into openage formats, which are a lot saner and more moddable.
