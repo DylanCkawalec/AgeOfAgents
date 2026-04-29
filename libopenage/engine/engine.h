@@ -134,6 +134,14 @@ private:
 	 * Video/audio/input management. Can be nullptr in headless mode.
 	 */
 	std::shared_ptr<presenter::Presenter> presenter;
+
+	/**
+	 * Window settings used when launching the presenter on the main thread.
+	 *
+	 * The presenter must run on the process main thread on macOS Cocoa,
+	 * so `Engine::loop()` invokes it from there using these settings.
+	 */
+	renderer::window_settings window_settings;
 };
 
 } // namespace engine

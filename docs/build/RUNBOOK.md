@@ -28,6 +28,31 @@ The current OrbStack validation target is `./bin/run --help`, not a full GUI lau
 
 The native path uses Homebrew LLVM, Homebrew `eigen@3`, Homebrew Python 3.12 as the virtualenv base, and project-local Python packages in `state/macos/venv`.
 
+## Asset and full-game launch gate
+
+1. `./tools/agectl/agectl assets status`
+2. `./tools/agectl/agectl assets discover`
+3. `./tools/agectl/agectl assets verify`
+4. If no playable modpack exists, set `AGE_ASSET_SOURCE_DIR=/path/to/supported/game/install`.
+5. `AGE_ASSET_SOURCE_DIR=/path/to/supported/game/install ./tools/agectl/agectl assets convert native`
+6. `./tools/agectl/agectl assets verify`
+7. `AGE_BACKEND=native ./ageofagents.sh launch`
+
+`assets/converted/engine` is only the openage API modpack and is not playable. Full converted-game launch requires at least one non-engine modpack in `assets/converted`.
+
+## Standalone engine demo verifier
+
+Use this when a supported game asset source is not available yet:
+
+1. `AGE_BACKEND=native AGE_DEMO_TIMEOUT=10 ./ageofagents.sh demo`
+
+This validates that the native engine/window/input path can start and remain alive under a bounded timeout. It does not replace the full converted-game launch gate.
+## Starter modpack (no proprietary assets required)
+1. `./tools/agectl/agectl assets bootstrap-starter`
+2. `./tools/agectl/agectl assets verify`
+3. `AGE_BACKEND=native AGE_MODPACKS=ageofagents_base ./ageofagents.sh game`
+`./ageofagents.sh launch` will auto-bootstrap the starter when `AGE_ASSET_SOURCE_DIR` is not set, so a fresh checkout can clear the modpack gate without a supported game install. Run `./tools/agectl/agectl assets remove-starter` to remove it before converting real assets.
+
 ## Local event bus
 
 1. `./tools/agectl/agectl events init`

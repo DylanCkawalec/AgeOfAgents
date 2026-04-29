@@ -52,8 +52,39 @@ void GameSimulation::run() {
 }
 
 
+void GameSimulation::step(time::time_t current_time) {
+	// Single-step entry point used when the simulation is driven inline by
+	// the presenter on the main thread (for macOS Cocoa Qt compatibility).
+	std::shared_lock lock{this->mutex};
+
+	if (not this->running) {
+		return;
+	}
+
+	if (not this->event_loop or not this->game) {
+		return;
+	}
+
+	this->event_loop->reach_time(current_time, this->game->get_state());
+}
+
+
+bool GameSimulation::is_running() const {
+	return this->running;
+}
+
+
 void GameSimulation::start() {
 	std::unique_lock lock{this->mutex};
+
+	if (this->game) {
+		// Already initialized; just (re)enable the run loop so callers like
+		// `Engine::Engine()` can pre-create the game synchronously and the
+		// simulation thread's `run()` can still call `start()` safely.
+		this->running = true;
+		log::log(MSG(info) << "Game simulation already initialized; resuming");
+		return;
+	}
 
 	this->init_event_handlers();
 

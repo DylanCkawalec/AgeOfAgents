@@ -6,6 +6,7 @@ IMAGE_TAG="${AGEOFAGENTS_ORBSTACK_IMAGE:-ageofagents-openage:ubuntu2404}"
 ACTION="${1:-status}"
 CONTAINER_REPO="/workspace/openage-ageofagents"
 CONTAINER_HOME="${CONTAINER_REPO}/state/orbstack/home"
+CONTAINER_ASSET_SOURCE="/workspace/source-assets"
 ORBSTACK_BUILD_DIR="${ORBSTACK_BUILD_DIR:-.bin/g++-debug-Oauto-sanitize-none}"
 LOG_DIR="${ROOT_DIR}/logs/runtime"
 LOG_FILE="${LOG_DIR}/orbstack-openage.log"
@@ -15,7 +16,7 @@ mkdir -p "${LOG_DIR}" "${ROOT_DIR}/state/orbstack/home" "${ROOT_DIR}/state/orbst
 
 usage() {
   cat <<'EOF'
-Usage: run_openage.sh status|configure|compile|run|game|full|all|shell
+Usage: run_openage.sh status|configure|compile|run|game|full|convert|demo|all|shell
 EOF
 }
 
@@ -51,18 +52,36 @@ require_image() {
 
 container_exec() {
   local script="$1"
-  docker run --rm \
-    --platform linux/arm64 \
-    --user "$(id -u):$(id -g)" \
-    -e HOME="${CONTAINER_HOME}" \
-    -e QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-offscreen}" \
-    -v "${ROOT_DIR}:${CONTAINER_REPO}" \
-    -w "${CONTAINER_REPO}" \
+  local docker_args=(
+    --rm
+    --platform linux/arm64
+    --user "$(id -u):$(id -g)"
+    -e "HOME=${CONTAINER_HOME}"
+    -e "QT_QPA_PLATFORM=${QT_QPA_PLATFORM:-offscreen}"
+    -e "OPENAGE_STDIN=${OPENAGE_STDIN:-}"
+    -e "AGE_MODPACKS=${AGE_MODPACKS:-}"
+    -e "AGE_CONVERT_JOBS=${AGE_CONVERT_JOBS:-}"
+    -v "${ROOT_DIR}:${CONTAINER_REPO}"
+    -w "${CONTAINER_REPO}"
+  )
+
+  if [ -n "${AGE_ASSET_SOURCE_DIR:-}" ]; then
+    if [ ! -d "${AGE_ASSET_SOURCE_DIR}" ]; then
+      echo "ERROR: AGE_ASSET_SOURCE_DIR does not exist or is not a directory: ${AGE_ASSET_SOURCE_DIR}" | tee -a "${LOG_FILE}"
+      record_failure "${ACTION}"
+      exit 1
+    fi
+    docker_args+=(-e "AGE_ASSET_SOURCE_DIR=${CONTAINER_ASSET_SOURCE}" -v "${AGE_ASSET_SOURCE_DIR}:${CONTAINER_ASSET_SOURCE}:ro")
+  else
+    docker_args+=(-e "AGE_ASSET_SOURCE_DIR=")
+  fi
+
+  docker run "${docker_args[@]}" \
     "${IMAGE_TAG}" \
     bash -lc "mkdir -p '${CONTAINER_HOME}' '${CONTAINER_REPO}/state/orbstack/cache'; ${script}"
 }
 
-ensure_orbstack_bin='if [ -d "'"${ORBSTACK_BUILD_DIR}"'" ]; then if [ -L bin ] || [ ! -e bin ]; then ln -sfn "'"${ORBSTACK_BUILD_DIR}"'" bin; else echo "ERROR: bin exists and is not a symlink; refusing to overwrite"; exit 1; fi; else echo "ERROR: missing OrbStack build dir '"${ORBSTACK_BUILD_DIR}"'. Run configure first."; exit 1; fi'
+ensure_orbstack_bin='if [ -d "'"${ORBSTACK_BUILD_DIR}"'" ]; then if [ -L bin ]; then rm -f bin; ln -s "'"${ORBSTACK_BUILD_DIR}"'" bin; elif [ ! -e bin ]; then ln -s "'"${ORBSTACK_BUILD_DIR}"'" bin; else echo "ERROR: bin exists and is not a symlink; refusing to overwrite"; exit 1; fi; else echo "ERROR: missing OrbStack build dir '"${ORBSTACK_BUILD_DIR}"'. Run configure first."; exit 1; fi'
 
 require_docker
 
@@ -89,15 +108,23 @@ case "${ACTION}" in
     ;;
   run)
     require_image
-    container_exec "${ensure_orbstack_bin}; test -x ./bin/run && ./bin/run --help" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
+    container_exec "${ensure_orbstack_bin}; test -x ./bin/run && cd bin && ./run --help" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
     ;;
   game|full)
     require_image
-    container_exec "${ensure_orbstack_bin}; test -x ./bin/run && ./bin/run main" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
+    container_exec "${ensure_orbstack_bin}; test -x ./bin/run && cd bin && if [ -n \"\${AGE_MODPACKS:-}\" ]; then read -r -a modpacks <<< \"\${AGE_MODPACKS}\"; ./run game --modpacks \"\${modpacks[@]}\"; elif [ -n \"\${OPENAGE_STDIN:-}\" ]; then printf '%s\n' \"\${OPENAGE_STDIN}\" | ./run main; else ./run main; fi" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
+    ;;
+  convert)
+    require_image
+    container_exec "${ensure_orbstack_bin}; if [ -z \"\${AGE_ASSET_SOURCE_DIR:-}\" ]; then echo \"ERROR: AGE_ASSET_SOURCE_DIR must point to a supported game installation before conversion.\"; exit 1; fi; test -x ./bin/run && cd bin && convert_args=(convert --force --no-prompts --source-dir \"\${AGE_ASSET_SOURCE_DIR}\" --output-dir \"${CONTAINER_REPO}/assets\"); if [ -n \"\${AGE_CONVERT_JOBS:-}\" ]; then convert_args+=(-j \"\${AGE_CONVERT_JOBS}\"); fi; ./run \"\${convert_args[@]}\"" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
+    ;;
+  demo)
+    require_image
+    container_exec "${ensure_orbstack_bin}; test -x ./bin/run && cd bin && ./run test -d openage.main.tests.engine_demo \"${AGE_DEMO_ID:-0}\"" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
     ;;
   all)
     require_image
-    container_exec "./configure --download-nyan && make -j\$(nproc) && ./bin/run --help" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
+    container_exec "./configure --download-nyan && make -j\$(nproc) && cd bin && ./run --help" 2>&1 | tee -a "${LOG_FILE}" || { record_failure "${ACTION}"; exit 1; }
     ;;
   shell)
     require_image

@@ -25,6 +25,10 @@ Run the minimal runtime smoke check:
 ```bash
 ./tools/agectl/agectl run
 ```
+Run the standalone engine/window/input demo:
+```bash
+AGE_BACKEND=native ./ageofagents.sh demo
+```
 ## OrbStack fallback
 Build the OrbStack Docker image:
 ```bash
@@ -47,6 +51,25 @@ Install missing native dependencies, then build:
 ./tools/agectl/agectl native configure
 ./tools/agectl/agectl native compile
 ./tools/agectl/agectl native run
+```
+## Assets and full game gate
+Inspect converted modpacks:
+```bash
+./tools/agectl/agectl assets status
+./tools/agectl/agectl assets list
+./tools/agectl/agectl assets verify
+```
+Discover common local game install paths:
+```bash
+./tools/agectl/agectl assets discover
+```
+Convert a supported game installation into `assets/converted`:
+```bash
+AGE_ASSET_SOURCE_DIR=/path/to/supported/game/install ./tools/agectl/agectl assets convert native
+```
+Launch the full game after a playable non-engine modpack exists:
+```bash
+AGE_BACKEND=native ./ageofagents.sh launch
 ```
 ## Local event bus
 Initialize event storage:

@@ -22,3 +22,25 @@
 - **Why:** openage already has an internal engine event system; AgeOfAgents needs a separate operator/agent/orchestration event stream.
 - **Decision:** Use both JSONL and SQLite for the first durable local bus.
 - **Why:** JSONL is easy to inspect and append; SQLite supports indexed CLI queries for `agectl events list` and future bridge APIs.
+
+## Standalone game launch decisions
+
+- **Decision:** Treat `assets/converted/engine` as an API/runtime dependency, not a playable game.
+- **Why:** openage excludes `engine` when enumerating playable modpacks; full game launch requires a non-engine converted modpack.
+- **Decision:** Add explicit `agectl assets` commands before further agent integration.
+- **Why:** The launcher must verify asset readiness before starting openage so missing assets are reported as an operator action, not as a late runtime exception.
+- **Decision:** Prefer native macOS first for the full launch gate.
+- **Why:** Native macOS is the only currently validated path that can show an actual local window; OrbStack remains valuable for build, conversion, and smoke checks.
+- **Decision:** Add a standalone engine demo verifier while preserving the full-game asset gate.
+- **Why:** The demo proves the engine/window/input path can start, but it does not replace playable converted AoE/SWGB assets for real full-game launch.
+
+## Native macOS Cocoa-Qt threading and render decisions
+
+- **Decision:** Run the presenter on the process main thread and drive the simulation step inline each frame.
+- **Why:** Cocoa Qt requires the GUI event loop on the main thread, and an inline simulation step matches the proven Pong demo pattern, removing all cross-thread access to `Clock`, `EventLoop`, and game state during render.
+- **Decision:** Pre-call `GameSimulation::start()` synchronously in the engine constructor and make `start()` idempotent.
+- **Why:** This guarantees `Game` (and its `GameState`) exist before any thread accesses them, so `simulation->attach_renderer()` cannot race a not-yet-constructed game.
+- **Decision:** Drain Qt-internal GL errors after `setVisible(true)` and skip terrain `render_update` for empty-tile chunks.
+- **Why:** macOS Core 4.1 is stricter than Linux drivers; ignoring Qt's harmless init errors and not indexing an empty terrain tile vector lets the renderer initialize cleanly with the starter modpack.
+- **Decision:** Default `OPENAGE_SKIP_GUI=1` in the macOS launcher and runner.
+- **Why:** Qt's legacy QtQuick QML pipeline ships `#version 120` shaders that macOS Core 4.1 cannot compile. Skipping the QML overlay keeps the engine/window/input/render stages working today; the QML overlay can be re-enabled when an `OpenGLRhi` or alternative QML path lands.

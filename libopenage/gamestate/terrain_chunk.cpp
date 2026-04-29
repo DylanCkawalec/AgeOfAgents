@@ -44,6 +44,14 @@ const TerrainTile &TerrainChunk::get_tile(const coord::tile &pos) const {
 
 void TerrainChunk::render_update(const time::time_t &time) {
 	if (this->render_entity != nullptr) {
+		if (this->tiles.empty()) {
+			// No tiles in this chunk (e.g. when the loaded modpack does not
+			// register terrain entries for this game's modpack id). Skip the
+			// render update so the renderer doesn't index into an empty tile
+			// vector. The chunk will simply not be drawn.
+			return;
+		}
+
 		// TODO: Update individual tiles instead of the whole chunk
 		std::vector<std::pair<terrain_elevation_t, std::string>> tiles;
 		tiles.reserve(this->tiles.size());

@@ -2,6 +2,7 @@
 
 #include "presenter.h"
 
+#include <cstdlib>
 #include <eigen3/Eigen/Dense>
 #include <iostream>
 #include <string>
@@ -32,6 +33,7 @@
 #include "renderer/stages/skybox/render_stage.h"
 #include "renderer/stages/terrain/render_stage.h"
 #include "renderer/stages/world/render_stage.h"
+#include "time/clock.h"
 #include "time/time_loop.h"
 #include "util/path.h"
 
@@ -57,6 +59,21 @@ void Presenter::run(const renderer::window_settings window_settings) {
 	while (not this->window->should_close()) {
 		this->gui_app->process_events();
 		// TODO: pass button presses and events from GUI to controller
+
+		// Drive the clock and gameplay simulation inline on the main thread.
+		// macOS Cocoa Qt requires the GUI event loop to own the main thread,
+		// so the presenter advances both time and the simulation step here
+		// (matching the Pong demo pattern). This avoids cross-thread access to
+		// the clock's mutex and races against `attach_renderer`.
+		if (this->time_loop) {
+			auto clock = this->time_loop->get_clock();
+			if (clock) {
+				clock->update_time();
+				if (this->simulation) {
+					this->simulation->step(clock->get_time());
+				}
+			}
+		}
 
 		this->render();
 
@@ -166,7 +183,14 @@ void Presenter::init_graphics(const renderer::window_settings &window_settings) 
 		this->time_loop->get_clock());
 	this->render_passes.push_back(this->hud_renderer->get_render_pass());
 
-	this->init_gui();
+	const char *skip_gui_env = std::getenv("OPENAGE_SKIP_GUI");
+	const bool skip_gui = skip_gui_env && std::string(skip_gui_env) == "1";
+	if (not skip_gui) {
+		this->init_gui();
+	}
+	else {
+		log::log(MSG(info) << "Presenter: Skipping QML GUI init (OPENAGE_SKIP_GUI=1)");
+	}
 	this->init_final_render_pass();
 
 	if (this->simulation) {
@@ -313,7 +337,9 @@ void Presenter::render() {
 	this->terrain_renderer->update();
 	this->world_renderer->update();
 	this->hud_renderer->update();
-	this->gui->render();
+	if (this->gui) {
+		this->gui->render();
+	}
 
 	for (auto &pass : this->render_passes) {
 		this->renderer->render(pass);

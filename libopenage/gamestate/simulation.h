@@ -4,6 +4,7 @@
 
 #include <shared_mutex>
 
+#include "time/time.h"
 #include "util/path.h"
 
 namespace openage {
@@ -67,6 +68,22 @@ public:
 	 * Run the simulation loop.
 	 */
 	void run();
+
+	/**
+	 * Run a single simulation step at the given time.
+	 *
+	 * Drives one iteration of the event loop. Used when the simulation is
+	 * driven inline by the presenter on the main thread (required on macOS
+	 * Cocoa Qt) instead of by a dedicated simulation thread.
+	 *
+	 * @param current_time Reference time to advance the event loop to.
+	 */
+	void step(time::time_t current_time);
+
+	/**
+	 * @return whether the simulation is in its running state.
+	 */
+	bool is_running() const;
 
 	/**
 	 * Start the simulation loop.

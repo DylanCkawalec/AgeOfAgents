@@ -10,6 +10,7 @@
 - log directory access
 - OrbStack fallback wrappers
 - native macOS fallback wrappers
+- asset source and converted modpack checks
 - local event bus gateway
 
 ## Usage
@@ -22,6 +23,8 @@
 ./tools/agectl/agectl logs runtime
 ./tools/agectl/agectl orbstack status
 ./tools/agectl/agectl native check-deps
+./tools/agectl/agectl assets status
+./tools/agectl/agectl assets verify
 ./tools/agectl/agectl events status
 ```
 

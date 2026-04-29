@@ -6,6 +6,7 @@ VM_SCRIPT_DIR="${ROOT_DIR}/infra/vm"
 ORBSTACK_SCRIPT_DIR="${ROOT_DIR}/infra/orbstack"
 MACOS_SCRIPT_DIR="${ROOT_DIR}/infra/macos"
 EVENT_BUS_SCRIPT="${ROOT_DIR}/agent_runtime/event_bus/age_event_bus.py"
+ASSET_SCRIPT="${ROOT_DIR}/tools/agectl/age_assets.py"
 
 usage() {
   cat <<'EOF'
@@ -13,10 +14,11 @@ Usage:
   agectl vm start|stop|status|shell
   agectl deps install
   agectl build configure|compile|status
-  agectl run|game
+  agectl run|game|demo
   agectl logs [runtime|agents|build|vm]
-  agectl orbstack status|build-image|configure|compile|run|game|all|shell
-  agectl native check-deps|install-deps|configure|compile|run|game|all
+  agectl orbstack status|build-image|configure|compile|run|game|convert|demo|all|shell
+  agectl native check-deps|install-deps|configure|compile|run|game|convert|demo|all
+  agectl assets status|discover|list|verify|validate-source|convert|bootstrap-starter|remove-starter
   agectl events init|status|types|emit|list|tail
 EOF
 }
@@ -41,6 +43,8 @@ cmd_orbstack() {
     compile) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" compile ;;
     run) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" run ;;
     game) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" game ;;
+    convert) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" convert ;;
+    demo) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" demo ;;
     all) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" all ;;
     shell) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" shell ;;
     *) usage; exit 1 ;;
@@ -56,8 +60,45 @@ cmd_native() {
     compile) "${MACOS_SCRIPT_DIR}/build_openage.sh" compile ;;
     run) "${MACOS_SCRIPT_DIR}/build_openage.sh" run ;;
     game) "${MACOS_SCRIPT_DIR}/build_openage.sh" game ;;
+    convert) "${MACOS_SCRIPT_DIR}/build_openage.sh" convert ;;
+    demo) "${MACOS_SCRIPT_DIR}/build_openage.sh" demo ;;
     all) "${MACOS_SCRIPT_DIR}/build_openage.sh" all ;;
     *) usage; exit 1 ;;
+  esac
+}
+
+cmd_assets() {
+  local sub
+  if [ "$#" -gt 0 ]; then
+    sub="$1"
+    shift
+  else
+    sub="status"
+  fi
+
+  case "${sub}" in
+    status|discover|list|verify|validate-source|bootstrap-starter|remove-starter)
+      python3 "${ASSET_SCRIPT}" --repo-root "${ROOT_DIR}" "${sub}" "$@"
+      ;;
+    convert)
+      local backend="${1:-${AGE_ASSET_BACKEND:-native}}"
+      if [ -z "${AGE_ASSET_SOURCE_DIR:-}" ]; then
+        echo "ERROR: AGE_ASSET_SOURCE_DIR must point to a supported game installation before conversion." >&2
+        echo "Run './tools/agectl/agectl assets discover' or set AGE_ASSET_SOURCE_DIR=/path/to/game/install." >&2
+        exit 1
+      fi
+      python3 "${ASSET_SCRIPT}" --repo-root "${ROOT_DIR}" validate-source "${AGE_ASSET_SOURCE_DIR}"
+      case "${backend}" in
+        native) "${MACOS_SCRIPT_DIR}/build_openage.sh" convert ;;
+        orbstack) "${ORBSTACK_SCRIPT_DIR}/run_openage.sh" convert ;;
+        lima) "${VM_SCRIPT_DIR}/run_engine.sh" convert ;;
+        *) echo "ERROR: unknown asset conversion backend: ${backend}" >&2; exit 1 ;;
+      esac
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
   esac
 }
 
@@ -106,9 +147,11 @@ main() {
     build) shift; cmd_build "${1:-}" ;;
     run) "${VM_SCRIPT_DIR}/run_engine.sh" run ;;
     game) "${VM_SCRIPT_DIR}/run_engine.sh" game ;;
+    demo) "${VM_SCRIPT_DIR}/run_engine.sh" demo ;;
     logs) shift || true; cmd_logs "${1:-runtime}" ;;
     orbstack) shift; cmd_orbstack "${1:-status}" ;;
     native) shift; cmd_native "${1:-check-deps}" ;;
+    assets) shift; cmd_assets "$@" ;;
     events) shift; cmd_events "$@" ;;
     *) usage; exit 1 ;;
   esac
