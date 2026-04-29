@@ -91,3 +91,18 @@ perf.data*
 # copyrighted assets
 /assets/converted/
 /assets/terrain/
+
+# AgeOfAgents local notes / WIP (not tracked)
+/docs/plan.md
+/docs/draft.md
+/docs/creative.md
+/docs/ageofagents_wip.md
+/docs/ageofagents_prd_1.tex
+/docs/ageofagents_prd_2.tex
+/docs/agentsofchaos_wip.tex
+/docs/build/RUNBOOK.md
+/docs/build/MAC_M2_VM_NOTES.md
+/docs/build/DEPENDENCY_MATRIX.md
+/docs/build/BUILD_LOG.md
+/docs/build/BUILD_ERRORS.md
+/docs/build/BUILD_DECISIONS.md
